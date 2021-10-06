@@ -29,7 +29,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Publish
-        run: mvn publish
+        run: mvn deploy
       - name: Output tag to use in jobs below
         run: echo "::set-output tag=$(git tag --points-at HEAD)"
 
