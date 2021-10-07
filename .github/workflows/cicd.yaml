@@ -1,0 +1,51 @@
+name: CI/CD
+
+on:
+  push:
+    branches:
+      - '**'
+
+jobs:
+  # Build on a push to any branch
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Setup Java
+        uses: actions/setup-java@v2
+        with:
+          distribution: temurin
+          java-version: '11'
+      - name: Build
+        run: mvn package
+
+  # Publish if a tag is on this commit
+  publish:
+    name: Publish to Maven Central
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Publish
+        run: mvn deploy
+      - name: Output tag to use in jobs below
+        run: echo "::set-output tag=$(git tag --points-at HEAD)"
+
+  # And then only make a Github Release if published successfully
+  create-release:
+    name: Create GitHub Release
+    needs: publish
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create GitHub Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # GITHUB_TOKEN is provided by default by Actions
+        with:
+          tag_name: ${{ steps.publish.outputs.tag }}
+          release_name: Release ${{ steps.publish.outputs.tag }}
+          body_path: CHANGELOG.md
+          draft: false
+          prerelease: false
