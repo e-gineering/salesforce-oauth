@@ -10,6 +10,51 @@
 
   <name>salesforce-oauth</name>
   <description>Used to request an access token from Salesforce using the OAuth 2.0 JWT Bearer Flow</description>
+  <url>https://github.com/egineering-llc/salesforce-oauth</url>
+
+  <organization>
+    <name>E-gineering, Inc.</name>
+    <url>https://www.e-gineering.com</url>
+  </organization>
+
+  <developers>
+    <developer>
+      <name>Allan Moso</name>
+      <email>allan.moso@e-gineering.com</email>
+      <organization>E-gineering, Inc.</organization>
+      <organizationUrl>https://www.e-gineering.com</organizationUrl>
+    </developer>
+  </developers>
+
+  <issueManagement>
+    <url>https://github.com/egineering-llc/salesforce-oauth/issues</url>
+    <system>GitHub Issues</system>
+  </issueManagement>
+
+  <licenses>
+    <license>
+      <name>MIT License</name>
+      <url>https://github.com/egineering-llc/salesforce-oauth/blob/main/LICENSE</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+
+  <scm>
+    <url>https://github.com/egineering-llc/salesforce-oauth</url>
+    <connection>scm:git:git://github.com/egineering-llc/salesforce-oauth</connection>
+    <developerConnection>scm:git:git@github.com:egineering-llc/salesforce-oauth</developerConnection>
+  </scm>
+
+  <distributionManagement>
+    <snapshotRepository>
+      <id>ossrh</id>
+      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+    </snapshotRepository>
+    <repository>
+      <id>ossrh</id>
+      <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+    </repository>
+  </distributionManagement>
 
   <dependencies>
 
@@ -68,5 +113,57 @@
       </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <profile>
+      <id>eg.oss</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-gpg-plugin</artifactId>
+            <version>1.5</version>
+            <executions>
+              <execution>
+                <id>sign-artifacts</id>
+                <phase>verify</phase>
+                <goals>
+                  <goal>sign</goal>
+                </goals>
+                <configuration>
+                  <gpgArguments>
+                    <arg>--pinentry-mode</arg>
+                    <arg>loopback</arg>
+                  </gpgArguments>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.sonatype.plugins</groupId>
+            <artifactId>nexus-staging-maven-plugin</artifactId>
+            <version>1.6.7</version>
+            <extensions>true</extensions>
+            <configuration>
+              <serverId>ossrh</serverId>
+              <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+              <autoReleaseAfterClose>false</autoReleaseAfterClose>
+            </configuration>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-release-plugin</artifactId>
+            <version>2.5.1</version>
+            <configuration>
+              <tagNameFormat>v@{project.version}</tagNameFormat>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 
 </project>
