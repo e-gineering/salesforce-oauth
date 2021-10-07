@@ -12,6 +12,10 @@
   <description>Used to request an access token from Salesforce using the OAuth 2.0 JWT Bearer Flow</description>
   <url>https://github.com/egineering-llc/salesforce-oauth</url>
 
+  <properties>
+    <skipTests>true</skipTests>
+  </properties>
+
   <organization>
     <name>E-gineering, Inc.</name>
     <url>https://www.e-gineering.com</url>
@@ -110,6 +114,9 @@
             </goals>
           </execution>
         </executions>
+        <configuration>
+          <skipITs>${skipTests}</skipITs>
+        </configuration>
       </plugin>
     </plugins>
   </build>
