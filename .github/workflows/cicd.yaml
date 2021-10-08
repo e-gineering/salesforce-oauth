@@ -19,7 +19,7 @@ jobs:
           distribution: temurin
           java-version: '11'
       - name: Build
-        run: mvn package
+        run: mvn -DskipTests=false -Dsalesforce.jwt.rsa.private-key=${{ secrets.SALESFORCE_OAUTH_PRIVATE_KEY_BASE64 }} -Dsalesforce.jwt.rsa.public-key=${{ secrets.SALESFORCE_OAUTH_PUBLIC_KEY_BASE64 }} -Dsalesforce.jwt.rsa.password=${{ secrets.SALESFORCE_OAUTH_RSA_PASSWORD }} -Dsalesforce.api.client-id=${{ secrets.SALESFORCE_OAUTH_CLIENT_ID }} -Dsalesforce.api.client-secret=${{ secrets.SALESFORCE_OAUTH_CLIENT_SECRET }} -Dsalesforce.api-base-url=${{ secrets.SALESFORCE_BASE_URL }} -Dsalesforce.jwt.audience=${{ secrets.SALESFORCE_JWT_AUDIENCE }} -Dsalesforce.jwt.subject=${{ secrets.SALESFORCE_USERNAME }} verify
 
   # Publish if a tag is on this commit
   publish:
