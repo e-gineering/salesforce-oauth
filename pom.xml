@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>com.e-gineering</groupId>
@@ -9,9 +10,12 @@
   <name>salesforce-oauth</name>
   <description>Used to request an access token from Salesforce using the OAuth 2.0 JWT Bearer Flow</description>
   <url>https://github.com/egineering-llc/salesforce-oauth</url>
+  <inceptionYear>2021</inceptionYear>
 
   <properties>
     <skipTests>true</skipTests>
+    <license.licenseName>mit</license.licenseName>
+    <license.licenceFile>LICENSE</license.licenceFile>
   </properties>
 
   <organization>
@@ -154,6 +158,19 @@
         <configuration>
           <tagNameFormat>v@{project.version}</tagNameFormat>
         </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>license-maven-plugin</artifactId>
+        <version>2.0.0</version>
+        <executions>
+          <execution>
+            <id>add-third-party</id>
+            <goals>
+              <goal>add-third-party</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>
