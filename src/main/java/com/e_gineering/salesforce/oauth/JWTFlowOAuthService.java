@@ -61,11 +61,8 @@ public class JWTFlowOAuthService {
   private static final String GRANT_TYPE = "urn:ietf:params:oauth:grant-type:jwt-bearer";
   private static final Logger log = LoggerFactory.getLogger(JWTFlowOAuthService.class);
 
-  private final String clientId;
-  private final String clientSecret;
   private final String baseUrl;
-  private final String jwtAudience;
-  private final String subject;
+  private final JWTParameters jwtParameters;
 
   private final RSASSASigner signer;
   private final RSASSAVerifier signatureVerifier;
@@ -75,25 +72,17 @@ public class JWTFlowOAuthService {
   private final ObjectMapper objectMapper;
 
   public JWTFlowOAuthService(
-    String privateKey,
-    String publicKey,
-    String password,
-    String clientId,
-    String clientSecret,
     String baseUrl,
-    String jwtAudience,
-    String subject)
+    JWTParameters jwtParameters,
+    PublicPrivateKeyPair keyPair)
     throws CertificateException,
     NoSuchAlgorithmException,
     KeyStoreException,
     IOException,
     UnrecoverableKeyException {
-    this.clientId = clientId;
-    this.clientSecret = clientSecret;
     this.baseUrl = baseUrl;
-    this.jwtAudience = jwtAudience;
-    this.subject = subject;
-    EnvKeyStore envKeyStore = EnvKeyStore.createFromPEMStrings(privateKey, publicKey, password);
+    this.jwtParameters = jwtParameters;
+    EnvKeyStore envKeyStore = EnvKeyStore.createFromPEMStrings(keyPair.getPrivateKey(), keyPair.getPublicKey(), keyPair.getPrivateKeyPassword());
     final Key key = envKeyStore.keyStore().getKey("alias", envKeyStore.password().toCharArray());
     this.signer = new RSASSASigner((PrivateKey) key);
     this.signatureVerifier = new RSASSAVerifier((RSAPublicKey) envKeyStore.keyStore().getCertificate("alias").getPublicKey());
@@ -110,8 +99,8 @@ public class JWTFlowOAuthService {
       baseUrl + "/services/oauth2/token?grant_type=%s&assertion=%s&client_id=%s&client_secret=%s",
       GRANT_TYPE,
       generatedJWT(),
-      clientId,
-      clientSecret
+      jwtParameters.getClientId(),
+      jwtParameters.getClientSecret()
     );
 
     HttpRequest request = HttpRequest.newBuilder()
@@ -122,7 +111,7 @@ public class JWTFlowOAuthService {
     try {
       HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
-      Map<String, String> body = new ObjectMapper().readValue(response.body(), new TypeReference<>() {
+      Map<String, String> body = objectMapper.readValue(response.body(), new TypeReference<>() {
       });
 
       return body.get("access_token");
@@ -137,9 +126,9 @@ public class JWTFlowOAuthService {
     final JWSHeader header = new JWSHeader(JWSAlgorithm.RS256);
 
     JWTClaimsSet claimSet = new JWTClaimsSet.Builder()
-      .issuer(clientId)
-      .subject(subject)
-      .audience(jwtAudience)
+      .issuer(jwtParameters.getClientId())
+      .subject(jwtParameters.getSubject())
+      .audience(jwtParameters.getJwtAudience())
       .expirationTime(getExpirationTime())
       .build();
 

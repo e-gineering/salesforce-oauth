@@ -52,7 +52,21 @@ class JWTFlowOAuthServiceIT {
     String baseUrl = System.getProperty("salesforce.api.base-url");
     String jwtAudience = System.getProperty("salesforce.jwt.audience");
     String subject = System.getProperty("salesforce.jwt.subject");
-    var jwtFlowOAuthService = new JWTFlowOAuthService(privateKey, publicKey, password, clientId, clientSecret, baseUrl, jwtAudience, subject);
+
+    PublicPrivateKeyPair keyPair = new PublicPrivateKeyPair.Builder()
+      .privateKey(privateKey)
+      .privateKeyPassword(password)
+      .publicKey(publicKey)
+      .build();
+
+    JWTParameters jwtParameters = new JWTParameters.Builder()
+      .clientId(clientId)
+      .clientSecret(clientSecret)
+      .jwtAudience(jwtAudience)
+      .subject(subject)
+      .build();
+
+    var jwtFlowOAuthService = new JWTFlowOAuthService(baseUrl, jwtParameters, keyPair);
 
     final String jwt = jwtFlowOAuthService.generatedJWT();
     assertTrue(jwtFlowOAuthService.validateJWT(jwt));
