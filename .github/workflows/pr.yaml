@@ -7,7 +7,7 @@ on:
 
 jobs:
   build_and_test:
-    uses: egineering-llc/salesforce-oauth/.github/workflows/build_and_test.yaml
+    uses: egineering-llc/salesforce-oauth/.github/workflows/build_and_test.yaml@4fff1c510e73c4dd7bfea81221e5d935b64a8029
     secrets:
       private-key: ${{ secrets.SALESFORCE_OAUTH_PRIVATE_KEY_BASE64 }}
       public-key: ${{ secrets.SALESFORCE_OAUTH_PUBLIC_KEY_BASE64 }}
