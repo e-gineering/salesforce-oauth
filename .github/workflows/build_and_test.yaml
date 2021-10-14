@@ -1,0 +1,37 @@
+name: CI/CD
+
+on:
+  workflow_call:
+    secrets:
+      private-key:
+        required: true
+      public-key:
+        required: true
+      rsa-password:
+        required: true
+      client-id:
+        required: true
+      client-secret:
+        required: true
+      api-base-url:
+        required: true
+      jwt-audience:
+        required: true
+      jwt-subject:
+        required: true
+
+jobs:
+  build_and_test:
+    name: Build And Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Setup Java
+        uses: actions/setup-java@v2
+        with:
+          distribution: temurin
+          java-version: '11'
+      - name: Build
+        run: mvn -DskipTests=false -Dsalesforce.jwt.rsa.private-key=${{ secrets.private-key }} -Dsalesforce.jwt.rsa.public-key=${{ secrets.public-key }} -Dsalesforce.jwt.rsa.password=${{ secrets.rsa-password }} -Dsalesforce.api.client-id=${{ secrets.client-id }} -Dsalesforce.api.client-secret=${{ secrets.client-secret }} -Dsalesforce.api-base-url=${{ secrets.api-base-url }} -Dsalesforce.jwt.audience=${{ secrets.jwt-audience }} -Dsalesforce.jwt.subject=${{ secrets.jwt-subject }} verify
+
