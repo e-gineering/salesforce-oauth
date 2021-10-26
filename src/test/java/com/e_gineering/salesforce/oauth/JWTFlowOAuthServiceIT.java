@@ -12,10 +12,10 @@ package com.e_gineering.salesforce.oauth;
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -26,15 +26,9 @@ package com.e_gineering.salesforce.oauth;
  * #L%
  */
 
-import com.nimbusds.jose.JOSEException;
+import com.e_gineering.salesforce.oauth.exceptions.JWTFlowException;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.UnrecoverableKeyException;
-import java.security.cert.CertificateException;
-import java.text.ParseException;
 import java.util.Base64;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -42,7 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class JWTFlowOAuthServiceIT {
 
   @Test
-  void requestAccessToken() throws UnrecoverableKeyException, CertificateException, NoSuchAlgorithmException, KeyStoreException, IOException, ParseException, JOSEException {
+  void requestAccessToken() throws JWTFlowException {
 
     String privateKey = new String(Base64.getDecoder().decode(System.getProperty("salesforce.jwt.rsa.private-key")));
     String publicKey = new String(Base64.getDecoder().decode(System.getProperty("salesforce.jwt.rsa.public-key")));
@@ -66,7 +60,7 @@ class JWTFlowOAuthServiceIT {
       .subject(subject)
       .build();
 
-    var jwtFlowOAuthService = new JWTFlowOAuthService(baseUrl, jwtParameters, keyPair);
+    var jwtFlowOAuthService = JWTFlowOAuthService.createWithKeyPair(baseUrl, jwtParameters, keyPair);
 
     final String jwt = jwtFlowOAuthService.generatedJWT();
     assertTrue(jwtFlowOAuthService.validateJWT(jwt));
