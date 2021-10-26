@@ -12,10 +12,10 @@ package com.e_gineering.salesforce.oauth;
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -26,6 +26,8 @@ package com.e_gineering.salesforce.oauth;
  * #L%
  */
 
+import com.e_gineering.salesforce.oauth.exceptions.JWTFlowException;
+import com.e_gineering.salesforce.oauth.exceptions.JWTFlowServiceInitException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.heroku.sdk.EnvKeyStore;
@@ -44,11 +46,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.security.Key;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.PrivateKey;
-import java.security.UnrecoverableKeyException;
+import java.security.*;
 import java.security.cert.CertificateException;
 import java.security.interfaces.RSAPublicKey;
 import java.text.ParseException;
@@ -74,25 +72,31 @@ public class JWTFlowOAuthService {
   public JWTFlowOAuthService(
     String baseUrl,
     JWTParameters jwtParameters,
-    PublicPrivateKeyPair keyPair)
-    throws CertificateException,
-    NoSuchAlgorithmException,
-    KeyStoreException,
-    IOException,
-    UnrecoverableKeyException {
+    RSASSASigner signer,
+    RSASSAVerifier verifier) {
     this.baseUrl = baseUrl;
     this.jwtParameters = jwtParameters;
-    EnvKeyStore envKeyStore = EnvKeyStore.createFromPEMStrings(keyPair.getPrivateKey(), keyPair.getPublicKey(), keyPair.getPrivateKeyPassword());
-    final Key key = envKeyStore.keyStore().getKey("alias", envKeyStore.password().toCharArray());
-    this.signer = new RSASSASigner((PrivateKey) key);
-    this.signatureVerifier = new RSASSAVerifier((RSAPublicKey) envKeyStore.keyStore().getCertificate("alias").getPublicKey());
-
+    this.signer = signer;
+    this.signatureVerifier = verifier;
     this.objectMapper = new ObjectMapper();
-
     this.httpClient = HttpClient.newHttpClient();
   }
 
-  public String requestAccessToken() {
+  public static JWTFlowOAuthService createWithKeyPair(String baseUrl,
+                                                      JWTParameters jwtParameters,
+                                                      PublicPrivateKeyPair keyPair) {
+    try {
+      EnvKeyStore envKeyStore = EnvKeyStore.createFromPEMStrings(keyPair.getPrivateKey(), keyPair.getPublicKey(), keyPair.getPrivateKeyPassword());
+      final Key key = envKeyStore.keyStore().getKey("alias", envKeyStore.password().toCharArray());
+      RSASSASigner signer = new RSASSASigner((PrivateKey) key);
+      RSASSAVerifier signatureVerifier = new RSASSAVerifier((RSAPublicKey) envKeyStore.keyStore().getCertificate("alias").getPublicKey());
+      return new JWTFlowOAuthService(baseUrl, jwtParameters, signer, signatureVerifier);
+    } catch (UnrecoverableKeyException | CertificateException | NoSuchAlgorithmException | KeyStoreException | IOException e) {
+      throw new JWTFlowServiceInitException("Error initializing signer and signature verifier", e);
+    }
+  }
+
+  public String requestAccessToken() throws JWTFlowException {
     log.info("Requesting access token.");
     String url
       = String.format(
@@ -117,11 +121,11 @@ public class JWTFlowOAuthService {
       return body.get("access_token");
 
     } catch (IOException | InterruptedException e) {
-      throw new RuntimeException(e);
+      throw new JWTFlowException("Unable to get access token", e);
     }
   }
 
-  public String generatedJWT() {
+  public String generatedJWT() throws JWTFlowException {
 
     final JWSHeader header = new JWSHeader(JWSAlgorithm.RS256);
 
@@ -137,15 +141,19 @@ public class JWTFlowOAuthService {
     try {
       signedJWT.sign(signer);
     } catch (JOSEException e) {
-      throw new RuntimeException(e);
+      throw new JWTFlowException("Error signing JWT", e);
     }
 
     return signedJWT.serialize();
   }
 
-  public boolean validateJWT(String token) throws ParseException, JOSEException {
-    SignedJWT jwt = SignedJWT.parse(token);
-    return jwt.verify(signatureVerifier);
+  public boolean validateJWT(String token) throws JWTFlowException {
+    try {
+      SignedJWT jwt = SignedJWT.parse(token);
+      return jwt.verify(signatureVerifier);
+    } catch (ParseException | JOSEException e) {
+      throw new JWTFlowException("Unable to validate token", e);
+    }
   }
 
   private Date getExpirationTime() {
