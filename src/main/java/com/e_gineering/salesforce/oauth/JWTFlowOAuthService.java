@@ -27,7 +27,6 @@ package com.e_gineering.salesforce.oauth;
  */
 
 import com.e_gineering.salesforce.oauth.exceptions.JWTFlowException;
-import com.e_gineering.salesforce.oauth.exceptions.JWTFlowServiceInitException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.heroku.sdk.EnvKeyStore;
@@ -46,7 +45,11 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.security.*;
+import java.security.Key;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.security.interfaces.RSAPublicKey;
 import java.text.ParseException;
@@ -92,11 +95,11 @@ public class JWTFlowOAuthService {
       RSASSAVerifier signatureVerifier = new RSASSAVerifier((RSAPublicKey) envKeyStore.keyStore().getCertificate("alias").getPublicKey());
       return new JWTFlowOAuthService(baseUrl, jwtParameters, signer, signatureVerifier);
     } catch (UnrecoverableKeyException | CertificateException | NoSuchAlgorithmException | KeyStoreException | IOException e) {
-      throw new JWTFlowServiceInitException("Error initializing signer and signature verifier", e);
+      throw new JWTFlowException("Error initializing signer and signature verifier", e);
     }
   }
 
-  public String requestAccessToken() throws JWTFlowException {
+  public String requestAccessToken() {
     log.info("Requesting access token.");
     String url
       = String.format(
@@ -125,7 +128,7 @@ public class JWTFlowOAuthService {
     }
   }
 
-  public String generatedJWT() throws JWTFlowException {
+  public String generatedJWT() {
 
     final JWSHeader header = new JWSHeader(JWSAlgorithm.RS256);
 
@@ -147,7 +150,7 @@ public class JWTFlowOAuthService {
     return signedJWT.serialize();
   }
 
-  public boolean validateJWT(String token) throws JWTFlowException {
+  public boolean validateJWT(String token) {
     try {
       SignedJWT jwt = SignedJWT.parse(token);
       return jwt.verify(signatureVerifier);
