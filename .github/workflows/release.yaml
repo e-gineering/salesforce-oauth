@@ -1,0 +1,57 @@
+name: Release
+
+on:
+  workflow_dispatch:
+
+jobs:
+  # Publish to Sonatype
+  publish:
+    name: Publish
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Setup Java
+        uses: actions/setup-java@v2
+        with:
+          distribution: "temurin"
+          java-version: "11"
+          server-id: ossrh # Value of the distributionManagement/repository/id field of the pom.xml
+          server-username: ${{ secrets.MAVEN_USERNAME }}
+          server-password: ${{ secrets.MAVEN_CENTRAL_TOKEN }}
+          gpg-private-key: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
+          gpg-passphrase: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
+      - name: Build and publish
+        run: |
+          mvn \
+            -Dsalesforce.api-base-url=${{ secrets.SALESFORCE_BASE_URL }} \
+            -Dsalesforce.api.client-id=${{ secrets.SALESFORCE_OAUTH_CLIENT_ID }} \
+            -Dsalesforce.api.client-secret=${{ secrets.SALESFORCE_OAUTH_CLIENT_SECRET }} \
+            -Dsalesforce.jwt.audience=${{ secrets.SALESFORCE_JWT_AUDIENCE }} \
+            -Dsalesforce.jwt.rsa.password=${{ secrets.SALESFORCE_OAUTH_RSA_PASSWORD }} \
+            -Dsalesforce.jwt.rsa.private-key=${{ secrets.SALESFORCE_OAUTH_PRIVATE_KEY_BASE64 }} \
+            -Dsalesforce.jwt.rsa.public-key=${{ secrets.SALESFORCE_OAUTH_PUBLIC_KEY_BASE64 }} \
+            -Dsalesforce.jwt.subject=${{ secrets.SALESFORCE_USERNAME }} \
+            -DskipTests=true \
+            --batch-mode \
+            release:prepare \
+            release:perform
+      - name: Output tag to use in jobs below
+        run: echo "::set-output tag=$(git tag --points-at HEAD)"
+
+  # And then only make a Github Release if published successfully
+  create-release:
+    name: Create GitHub Release
+    needs: publish
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create GitHub Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # GITHUB_TOKEN is provided by default by Actions
+        with:
+          tag_name: ${{ steps.publish.outputs.tag }}
+          release_name: Release ${{ steps.publish.outputs.tag }}
+          body_path: CHANGELOG.md
+          draft: false
+          prerelease: false
