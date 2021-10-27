@@ -3,23 +3,20 @@ name: CI/CD
 on:
   push:
     branches:
-      - '**'
+      - 'main'
 
 jobs:
-  # Build on a push to any branch
-  build:
-    name: Build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-      - name: Setup Java
-        uses: actions/setup-java@v2
-        with:
-          distribution: temurin
-          java-version: '11'
-      - name: Build
-        run: mvn -DskipTests=false -Dsalesforce.jwt.rsa.private-key=${{ secrets.SALESFORCE_OAUTH_PRIVATE_KEY_BASE64 }} -Dsalesforce.jwt.rsa.public-key=${{ secrets.SALESFORCE_OAUTH_PUBLIC_KEY_BASE64 }} -Dsalesforce.jwt.rsa.password=${{ secrets.SALESFORCE_OAUTH_RSA_PASSWORD }} -Dsalesforce.api.client-id=${{ secrets.SALESFORCE_OAUTH_CLIENT_ID }} -Dsalesforce.api.client-secret=${{ secrets.SALESFORCE_OAUTH_CLIENT_SECRET }} -Dsalesforce.api-base-url=${{ secrets.SALESFORCE_BASE_URL }} -Dsalesforce.jwt.audience=${{ secrets.SALESFORCE_JWT_AUDIENCE }} -Dsalesforce.jwt.subject=${{ secrets.SALESFORCE_USERNAME }} verify
+  build_and_test:
+    uses: egineering-llc/salesforce-oauth/.github/workflows/build_and_test.yaml@4fff1c510e73c4dd7bfea81221e5d935b64a8029
+    secrets:
+      private-key: ${{ secrets.SALESFORCE_OAUTH_PRIVATE_KEY_BASE64 }}
+      public-key: ${{ secrets.SALESFORCE_OAUTH_PUBLIC_KEY_BASE64 }}
+      rsa-password: ${{ secrets.SALESFORCE_OAUTH_RSA_PASSWORD }}
+      client-id: ${{ secrets.SALESFORCE_OAUTH_CLIENT_ID }}
+      client-secret: ${{ secrets.SALESFORCE_OAUTH_CLIENT_SECRET }}
+      api-base-url: ${{ secrets.SALESFORCE_BASE_URL }}
+      jwt-audience: ${{ secrets.SALESFORCE_JWT_AUDIENCE }}
+      jwt-subject: ${{ secrets.SALESFORCE_USERNAME }}
 
   # Publish if a tag is on this commit
   publish:
