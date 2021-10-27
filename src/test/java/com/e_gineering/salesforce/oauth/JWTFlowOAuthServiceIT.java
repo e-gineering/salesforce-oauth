@@ -36,7 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class JWTFlowOAuthServiceIT {
 
   @Test
-  void requestAccessToken() throws JWTFlowException {
+  void requestAccessToken() {
 
     String privateKey = new String(Base64.getDecoder().decode(System.getProperty("salesforce.jwt.rsa.private-key")));
     String publicKey = new String(Base64.getDecoder().decode(System.getProperty("salesforce.jwt.rsa.public-key")));
