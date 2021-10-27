@@ -1,4 +1,4 @@
-name: CI/CD
+name: Build on push
 
 on:
   push:
@@ -20,32 +20,3 @@ jobs:
           java-version: '11'
       - name: Build
         run: mvn -DskipTests=false -Dsalesforce.jwt.rsa.private-key=${{ secrets.SALESFORCE_OAUTH_PRIVATE_KEY_BASE64 }} -Dsalesforce.jwt.rsa.public-key=${{ secrets.SALESFORCE_OAUTH_PUBLIC_KEY_BASE64 }} -Dsalesforce.jwt.rsa.password=${{ secrets.SALESFORCE_OAUTH_RSA_PASSWORD }} -Dsalesforce.api.client-id=${{ secrets.SALESFORCE_OAUTH_CLIENT_ID }} -Dsalesforce.api.client-secret=${{ secrets.SALESFORCE_OAUTH_CLIENT_SECRET }} -Dsalesforce.api-base-url=${{ secrets.SALESFORCE_BASE_URL }} -Dsalesforce.jwt.audience=${{ secrets.SALESFORCE_JWT_AUDIENCE }} -Dsalesforce.jwt.subject=${{ secrets.SALESFORCE_USERNAME }} verify
-
-  # Publish if a tag is on this commit
-  publish:
-    name: Publish to Maven Central
-    if: startsWith(github.ref, 'refs/tags/')
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Publish
-        run: mvn deploy
-      - name: Output tag to use in jobs below
-        run: echo "::set-output tag=$(git tag --points-at HEAD)"
-
-  # And then only make a Github Release if published successfully
-  create-release:
-    name: Create GitHub Release
-    needs: publish
-    runs-on: ubuntu-latest
-    steps:
-      - name: Create GitHub Release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # GITHUB_TOKEN is provided by default by Actions
-        with:
-          tag_name: ${{ steps.publish.outputs.tag }}
-          release_name: Release ${{ steps.publish.outputs.tag }}
-          body_path: CHANGELOG.md
-          draft: false
-          prerelease: false
