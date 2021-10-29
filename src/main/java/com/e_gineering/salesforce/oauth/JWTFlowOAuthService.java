@@ -57,6 +57,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
 import java.util.Map;
+import java.util.Objects;
 
 public class JWTFlowOAuthService {
   private static final String GRANT_TYPE = "urn:ietf:params:oauth:grant-type:jwt-bearer";
@@ -72,31 +73,19 @@ public class JWTFlowOAuthService {
 
   private final ObjectMapper objectMapper;
 
-  public JWTFlowOAuthService(
+  private JWTFlowOAuthService(
     String baseUrl,
     JWTParameters jwtParameters,
     RSASSASigner signer,
-    RSASSAVerifier verifier) {
+    RSASSAVerifier verifier,
+    HttpClient httpClient,
+    ObjectMapper objectMapper) {
     this.baseUrl = baseUrl;
     this.jwtParameters = jwtParameters;
     this.signer = signer;
     this.signatureVerifier = verifier;
-    this.objectMapper = new ObjectMapper();
-    this.httpClient = HttpClient.newHttpClient();
-  }
-
-  public static JWTFlowOAuthService createWithKeyPair(String baseUrl,
-                                                      JWTParameters jwtParameters,
-                                                      PublicPrivateKeyPair keyPair) {
-    try {
-      EnvKeyStore envKeyStore = EnvKeyStore.createFromPEMStrings(keyPair.getPrivateKey(), keyPair.getPublicKey(), keyPair.getPrivateKeyPassword());
-      final Key key = envKeyStore.keyStore().getKey("alias", envKeyStore.password().toCharArray());
-      RSASSASigner signer = new RSASSASigner((PrivateKey) key);
-      RSASSAVerifier signatureVerifier = new RSASSAVerifier((RSAPublicKey) envKeyStore.keyStore().getCertificate("alias").getPublicKey());
-      return new JWTFlowOAuthService(baseUrl, jwtParameters, signer, signatureVerifier);
-    } catch (UnrecoverableKeyException | CertificateException | NoSuchAlgorithmException | KeyStoreException | IOException e) {
-      throw new JWTFlowException("Error initializing signer and signature verifier", e);
-    }
+    this.httpClient = httpClient;
+    this.objectMapper = objectMapper;
   }
 
   public String requestAccessToken() {
@@ -163,6 +152,71 @@ public class JWTFlowOAuthService {
     final Instant now = Instant.now();
     final Instant exp = now.plus(Duration.ofMillis(2));
     return Date.from(exp);
+  }
+
+  public static class Builder {
+    private String baseUrl;
+    private JWTParameters jwtParameters;
+    private RSASSASigner signer;
+    private RSASSAVerifier verifier;
+    private HttpClient httpClient;
+    private ObjectMapper objectMapper;
+
+    public Builder baseUrl(String baseUrl) {
+      this.baseUrl = baseUrl;
+      return this;
+    }
+
+    public Builder jwtParameters(JWTParameters jwtParameters) {
+      this.jwtParameters = jwtParameters;
+      return this;
+    }
+
+    public Builder createSignerAndVerifierWithKeyPair(PublicPrivateKeyPair keyPair) {
+      try {
+        EnvKeyStore envKeyStore = EnvKeyStore.createFromPEMStrings(keyPair.getPrivateKey(), keyPair.getPublicKey(), keyPair.getPrivateKeyPassword());
+        final Key key = envKeyStore.keyStore().getKey("alias", envKeyStore.password().toCharArray());
+        this.signer = new RSASSASigner((PrivateKey) key);
+        this.verifier = new RSASSAVerifier((RSAPublicKey) envKeyStore.keyStore().getCertificate("alias").getPublicKey());
+        return this;
+      } catch (UnrecoverableKeyException | CertificateException | NoSuchAlgorithmException | KeyStoreException | IOException e) {
+        throw new JWTFlowException("Error initializing signer and signature verifier", e);
+      }
+    }
+
+    public Builder signer(RSASSASigner signer) {
+      this.signer = signer;
+      return this;
+    }
+
+    public Builder verifier(RSASSAVerifier verifier) {
+      this.verifier = verifier;
+      return this;
+    }
+
+    public Builder httpClient(HttpClient httpClient) {
+      this.httpClient = httpClient;
+      return this;
+    }
+
+    public Builder objectMapper(ObjectMapper objectMapper) {
+      this.objectMapper = objectMapper;
+      return this;
+    }
+
+    public JWTFlowOAuthService build() {
+      Objects.requireNonNull(this.baseUrl);
+      Objects.requireNonNull(this.jwtParameters);
+      Objects.requireNonNull(this.signer);
+      Objects.requireNonNull(this.verifier);
+      if (Objects.isNull(this.httpClient)) {
+        this.httpClient = HttpClient.newHttpClient();
+      }
+      if (Objects.isNull(this.objectMapper)) {
+        this.objectMapper = new ObjectMapper();
+      }
+      return new JWTFlowOAuthService(this.baseUrl, this.jwtParameters, this.signer, this.verifier, this.httpClient, this.objectMapper);
+    }
   }
 
 }

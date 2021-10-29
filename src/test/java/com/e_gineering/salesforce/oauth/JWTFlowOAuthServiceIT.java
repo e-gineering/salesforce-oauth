@@ -26,7 +26,6 @@ package com.e_gineering.salesforce.oauth;
  * #L%
  */
 
-import com.e_gineering.salesforce.oauth.exceptions.JWTFlowException;
 import org.junit.jupiter.api.Test;
 
 import java.util.Base64;
@@ -60,7 +59,11 @@ class JWTFlowOAuthServiceIT {
       .subject(subject)
       .build();
 
-    var jwtFlowOAuthService = JWTFlowOAuthService.createWithKeyPair(baseUrl, jwtParameters, keyPair);
+    var jwtFlowOAuthService = new JWTFlowOAuthService.Builder()
+      .baseUrl(baseUrl)
+      .jwtParameters(jwtParameters)
+      .createSignerAndVerifierWithKeyPair(keyPair)
+      .build();
 
     final String jwt = jwtFlowOAuthService.generatedJWT();
     assertTrue(jwtFlowOAuthService.validateJWT(jwt));
